@@ -1,14 +1,15 @@
 #include <ESP8266WiFi.h>
 #include <Firebase_ESP_Client.h>
-#include <addons/TokenHelper.h>
 #include <PIDController.h>
+#include <addons/TokenHelper.h>
 
 // Wifi
 #define WIFI_SSID "Hitachigymnasiet_2.4"
 #define WIFI_PASSWORD "mittwifiarsabra"
 
 // Firebase RTDB
-#define DATABASE_URL "https://wexteras-9-default-rtdb.europe-west1.firebasedatabase.app/"
+#define DATABASE_URL                                                           \
+  "https://wexteras-9-default-rtdb.europe-west1.firebasedatabase.app/"
 #define API_KEY "AIzaSyDK2H0kGevKzy-Y-5rfN8InhAOQAQVO6q8"
 #define timerDelay 200
 
@@ -26,7 +27,6 @@ double percent = 0;
 double oldPercent = 0;
 int speed = 0;
 
-
 bool manual = false;
 
 float temperature = 20.0;
@@ -36,8 +36,7 @@ float desiredTemperature = 15.0;
 PIDController pid;
 
 // Get data function
-template<typename T>
-bool getData(const char* path, T& variable) {
+template <typename T> bool getData(const char *path, T &variable) {
   bool success = false;
 
   if constexpr (std::is_same<T, bool>::value) {
@@ -72,7 +71,6 @@ int percentToSpeed(int percent) {
   return percent == 0 ? 0 : map(percent, 0, 100, 185, 255);
 }
 
-
 void setup() {
   Serial.begin(9600);
   Serial.println("Starting");
@@ -96,7 +94,7 @@ void setup() {
   Firebase.reconnectWiFi(true);
 
   pinMode(MotorDir, OUTPUT);
-  analogWriteFreq(20000);  // Set PWM frequency to 20 kHz, reduce white noise
+  analogWriteFreq(20000); // Set PWM frequency to 20 kHz, reduce white noise
   digitalWrite(MotorDir, HIGH);
 
   pid.begin();
@@ -106,7 +104,8 @@ void setup() {
 }
 
 void loop() {
-  if (!(millis() - sendDataPrevMillis > timerDelay || sendDataPrevMillis == 0)) {
+  if (!(millis() - sendDataPrevMillis > timerDelay ||
+        sendDataPrevMillis == 0)) {
     sendDataPrevMillis = millis();
     return;
   }
@@ -115,7 +114,7 @@ void loop() {
 
     // Get all values
     getData("SensorValues/Temperature/Value", temperature);
-    getData("SensorValues/Temperature/Desired", desiredTemperature);
+    getData("Desired/Temperature", desiredTemperature);
     if (!getData("Overrides/Fan/Manual", manual)) {
       manual = false;
     }
@@ -137,7 +136,8 @@ void loop() {
     speed = percentToSpeed(percent);
     analogWrite(MotorSpeed, speed);
 
-    // If percent has been updated from the previous value, push update to Firebase
+    // If percent has been updated from the previous value, push update to
+    // Firebase
     if (percent != oldPercent) {
       Firebase.RTDB.setDouble(&fbdo, "MotorValues/FanSpeed", percent);
       oldPercent = percent;
